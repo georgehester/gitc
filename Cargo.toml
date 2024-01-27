@@ -3,9 +3,9 @@ name = "gitc"
 version = "0.1.0"
 description = ""
 authors = ["George Hester"]
-license = "MIT"
 license-file = "LICENSE"
 repository = ""
 edition = "2021"
 
 [dependencies]
+homedir = "0.2.1"
