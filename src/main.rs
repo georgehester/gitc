@@ -28,11 +28,29 @@ fn show_menu(options: Vec<String>, default: usize)
 
     crossterm::terminal::enable_raw_mode().unwrap();
 
+    //let window_size: WindowSize = crossterm::terminal::window_size().unwrap();
+
     //stdout.execute(crossterm::cursor::MoveToColumn(0)).unwrap();
 
     //let cursor_position: (u16, u16) = crossterm::cursor::position().unwrap();
 
     //println!("{:?}", crossterm::cursor::position().unwrap());
+
+    let cursor_position = crossterm::cursor::position().unwrap();
+    let window_size = crossterm::terminal::window_size().unwrap();
+    let extra_lines: i32 = (cursor_position.1 as i32) - (window_size.rows as i32) + (length as i32);
+
+    if extra_lines > 0
+    {
+        stdout
+            .execute(crossterm::terminal::ScrollUp(extra_lines as u16))
+            .unwrap()
+            .execute(crossterm::cursor::MoveTo(
+                0,
+                cursor_position.1 - (extra_lines as u16),
+            ))
+            .unwrap();
+    }
 
     stdout
         .execute(crossterm::cursor::Show)
@@ -42,7 +60,7 @@ fn show_menu(options: Vec<String>, default: usize)
 
     loop
     {
-        //stdout.execute(crossterm::cursor::SavePosition).unwrap();
+        let reset_position = stdout.execute(crossterm::cursor::SavePosition).unwrap();
 
         for (index, option) in options.iter().enumerate()
         {
@@ -51,49 +69,44 @@ fn show_menu(options: Vec<String>, default: usize)
                 stdout
                     .execute(crossterm::cursor::MoveTo(
                         0,
-                        crossterm::cursor::position().unwrap().1 + (index as u16),
+                        crossterm::cursor::position().unwrap().1,
                     ))
                     .unwrap()
                     .execute(crossterm::style::Print(format!(
-                        " > {} {} {}",
+                        " > {} {}",
                         option,
-                        crossterm::cursor::position().unwrap().0,
-                        index
+                        crossterm::cursor::position().unwrap().1,
+                        //crossterm::cursor::position().unwrap().1 + (index as u16),
+                        //window_size.rows,
+                        //index
                     )))
                     .unwrap();
-                //.execute(crossterm::cursor::MoveToRow(
-                //    crossterm::cursor::position().unwrap().0 + 1,
-                //))
-                //.unwrap();
-                continue;
             }
-
-            stdout
-                .execute(crossterm::cursor::MoveTo(
-                    0,
-                    crossterm::cursor::position().unwrap().1 + (index as u16),
-                ))
-                .unwrap()
-                .execute(crossterm::style::Print(format!(
-                    "   {} {} {}",
-                    option,
-                    crossterm::cursor::position().unwrap().0,
-                    index
-                )))
-                .unwrap();
-            //.execute(crossterm::cursor::MoveToRow(
-            //    crossterm::cursor::position().unwrap().0 + 1,
-            //))
-            //.unwrap();
-            //.execute(crossterm::cursor::MoveToRow(
-            //    cursor_position.1 + 1 + index as u16,
-            //))
-            //.unwrap();
+            else
+            {
+                stdout
+                    .execute(crossterm::cursor::MoveTo(
+                        0,
+                        crossterm::cursor::position().unwrap().1,
+                    ))
+                    .unwrap()
+                    .execute(crossterm::style::Print(format!(
+                        "   {} {}",
+                        option,
+                        crossterm::cursor::position().unwrap().1,
+                        //crossterm::cursor::position().unwrap().1 + (index as u16),
+                        //window_size.rows,
+                        //index
+                    )))
+                    .unwrap();
+            }
 
             if index < length
             {
                 stdout
-                    .execute(crossterm::cursor::MoveToNextLine(1))
+                    .execute(crossterm::cursor::MoveToRow(
+                        crossterm::cursor::position().unwrap().1 + 1,
+                    ))
                     .unwrap();
             }
         }
