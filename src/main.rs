@@ -1,5 +1,3 @@
-use std::io::Write;
-
 use crossterm::ExecutableCommand;
 
 pub mod error;
@@ -18,6 +16,8 @@ fn main()
             .collect::<Vec<String>>(),
         0,
     );
+
+    println!();
 }
 
 fn show_menu(options: Vec<String>, default: usize)
@@ -28,9 +28,9 @@ fn show_menu(options: Vec<String>, default: usize)
 
     crossterm::terminal::enable_raw_mode().unwrap();
 
-    stdout.execute(crossterm::cursor::MoveToColumn(0)).unwrap();
+    //stdout.execute(crossterm::cursor::MoveToColumn(0)).unwrap();
 
-    let cursor_position: (u16, u16) = crossterm::cursor::position().unwrap();
+    //let cursor_position: (u16, u16) = crossterm::cursor::position().unwrap();
 
     stdout
         .execute(crossterm::cursor::Hide)
@@ -47,24 +47,24 @@ fn show_menu(options: Vec<String>, default: usize)
                 stdout
                     .execute(crossterm::cursor::MoveToColumn(0))
                     .unwrap()
-                    .execute(crossterm::style::Print(format!(" > {}", option)))
-                    .unwrap()
-                    .execute(crossterm::cursor::MoveToRow(
-                        cursor_position.1 + 1 + index as u16,
-                    ))
+                    .execute(crossterm::style::Print(format!(" > {}\n", option)))
                     .unwrap();
+                //.execute(crossterm::cursor::MoveToRow(
+                //    cursor_position.1 + 1 + index as u16,
+                //))
+                //.unwrap();
                 continue;
             }
 
             stdout
                 .execute(crossterm::cursor::MoveToColumn(0))
                 .unwrap()
-                .execute(crossterm::style::Print(format!("   {}", option)))
-                .unwrap()
-                .execute(crossterm::cursor::MoveToRow(
-                    cursor_position.1 + 1 + index as u16,
-                ))
+                .execute(crossterm::style::Print(format!("   {}\n", option)))
                 .unwrap();
+            //.execute(crossterm::cursor::MoveToRow(
+            //    cursor_position.1 + 1 + index as u16,
+            //))
+            //.unwrap();
         }
 
         if crossterm::event::poll(std::time::Duration::from_millis(100)).unwrap()
@@ -107,5 +107,5 @@ fn show_menu(options: Vec<String>, default: usize)
     }
 
     stdout.execute(crossterm::cursor::Show).unwrap();
-    write!(stdout, "Testing").unwrap();
+    crossterm::terminal::disable_raw_mode().unwrap();
 }
