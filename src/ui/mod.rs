@@ -1,16 +1,33 @@
 use crossterm::ExecutableCommand;
 
-pub fn draw_option_menu(options: Vec<String>, default: usize)
+fn setup_terminal(stdout: &mut std::io::Stdout)
 {
+    // Hide cursor and enable raw mode
+    crossterm::terminal::enable_raw_mode().unwrap();
+    crossterm::execute!(stdout, crossterm::cursor::Hide).unwrap();
+}
+
+fn cleanup_terminal(stdout: &mut std::io::Stdout)
+{
+    // Reset cursor and disable raw mode
+    crossterm::execute!(stdout, crossterm::cursor::Show).unwrap();
+    crossterm::terminal::disable_raw_mode().unwrap();
+
+    // Print terminating byte
+    println!();
+}
+
+pub fn draw_option_menu(options: Vec<String>, default: usize) -> usize
+{
+    // Create stdout
+    let mut stdout = std::io::stdout();
+
+    // Setup terminal for output
+    setup_terminal(&mut stdout);
+
     // Get the current data from the input
     let mut current: usize = default;
     let length: usize = options.len();
-
-    // Get stdout
-    let mut stdout = std::io::stdout();
-
-    // Set terminal to raw mode
-    crossterm::terminal::enable_raw_mode().unwrap();
 
     // Calculate if we need more space to show output
     let scroll: i32 = (crossterm::cursor::position().unwrap().1 as i32)
@@ -20,22 +37,19 @@ pub fn draw_option_menu(options: Vec<String>, default: usize)
     // Scroll if we need more space
     if scroll > 0
     {
-        stdout
-            .execute(crossterm::terminal::ScrollUp(scroll as u16))
-            .unwrap()
-            .execute(crossterm::cursor::MoveTo(
+        crossterm::execute!(
+            &mut stdout,
+            crossterm::terminal::ScrollUp(scroll as u16),
+            crossterm::cursor::MoveTo(
                 0,
                 crossterm::cursor::position().unwrap().1 - (scroll as u16),
-            ))
-            .unwrap();
+            )
+        )
+        .unwrap();
     }
 
-    // Hide the cursor and save its current position
-    stdout
-        .execute(crossterm::cursor::Hide)
-        .unwrap()
-        .execute(crossterm::cursor::SavePosition)
-        .unwrap();
+    // Save cursors current position
+    crossterm::execute!(&mut stdout, crossterm::cursor::SavePosition).unwrap();
 
     // Render loop
     loop
@@ -46,35 +60,34 @@ pub fn draw_option_menu(options: Vec<String>, default: usize)
             // Highlight the current option
             if index == current
             {
-                stdout
-                    .execute(crossterm::cursor::MoveTo(
-                        0,
-                        crossterm::cursor::position().unwrap().1,
-                    ))
-                    .unwrap()
-                    .execute(crossterm::style::Print(format!(" > {}", option)))
-                    .unwrap();
+                crossterm::execute!(
+                    &mut stdout,
+                    crossterm::cursor::MoveTo(0, crossterm::cursor::position().unwrap().1),
+                    crossterm::style::Print(" > "),
+                    crossterm::style::SetForegroundColor(crossterm::style::Color::Green),
+                    crossterm::style::Print(format!("{}", option)),
+                    crossterm::style::ResetColor,
+                )
+                .unwrap();
             }
             else
             {
-                stdout
-                    .execute(crossterm::cursor::MoveTo(
-                        0,
-                        crossterm::cursor::position().unwrap().1,
-                    ))
-                    .unwrap()
-                    .execute(crossterm::style::Print(format!("   {}", option)))
-                    .unwrap();
+                crossterm::execute!(
+                    &mut stdout,
+                    crossterm::cursor::MoveTo(0, crossterm::cursor::position().unwrap().1),
+                    crossterm::style::Print(format!("   {}", option)),
+                )
+                .unwrap();
             }
 
             // Move cursor down a line if required
             if index < length
             {
-                stdout
-                    .execute(crossterm::cursor::MoveToRow(
-                        crossterm::cursor::position().unwrap().1 + 1,
-                    ))
-                    .unwrap();
+                crossterm::execute!(
+                    &mut stdout,
+                    crossterm::cursor::MoveToRow(crossterm::cursor::position().unwrap().1 + 1)
+                )
+                .unwrap();
             }
         }
 
@@ -103,6 +116,18 @@ pub fn draw_option_menu(options: Vec<String>, default: usize)
                     {
                         break;
                     }
+
+                    if !event.modifiers.is_empty()
+                    {
+                        if event
+                            .modifiers
+                            .contains(crossterm::event::KeyModifiers::CONTROL)
+                            && event.code == crossterm::event::KeyCode::Char('c')
+                        {
+                            cleanup_terminal(&mut stdout);
+                            std::process::exit(0)
+                        }
+                    }
                 }
                 _ =>
                 {}
@@ -110,19 +135,16 @@ pub fn draw_option_menu(options: Vec<String>, default: usize)
         }
 
         // Restore cursor position and clear the current output
-        stdout
-            .execute(crossterm::cursor::RestorePosition)
-            .unwrap()
-            .execute(crossterm::terminal::Clear(
-                crossterm::terminal::ClearType::FromCursorDown,
-            ))
-            .unwrap();
+        crossterm::execute!(
+            &mut stdout,
+            crossterm::cursor::RestorePosition,
+            crossterm::terminal::Clear(crossterm::terminal::ClearType::FromCursorDown,)
+        )
+        .unwrap();
     }
 
-    // Reset cursor view and disable raw mode
-    stdout.execute(crossterm::cursor::Show).unwrap();
-    crossterm::terminal::disable_raw_mode().unwrap();
+    cleanup_terminal(&mut stdout);
 
-    // Print terminating byte
-    println!();
+    // Return selected option
+    return current;
 }
