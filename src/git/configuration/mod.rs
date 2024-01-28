@@ -6,6 +6,15 @@ pub struct File
     pub path: std::path::PathBuf,
 }
 
+impl std::fmt::Debug for File
+{
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+    {
+        return formatter
+            .write_str(format!("({}, {})", self.name, self.path.to_str().unwrap()).as_str());
+    }
+}
+
 pub fn load() -> Result<Vec<File>, crate::error::Error>
 {
     // Get the home directory of the process owener

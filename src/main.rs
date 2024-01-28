@@ -1,10 +1,6 @@
 use std::io::Write;
 
-use crossterm::{
-    event,
-    style::{Print, Stylize},
-    ExecutableCommand,
-};
+use crossterm::ExecutableCommand;
 
 pub mod error;
 pub mod git;
@@ -12,6 +8,8 @@ pub mod git;
 fn main()
 {
     let git_configurations: Vec<git::configuration::File> = git::configuration::load().unwrap();
+
+    println!("{:?}", git_configurations);
 
     show_menu(
         git_configurations
@@ -28,12 +26,17 @@ fn show_menu(options: Vec<String>, default: usize)
     let mut current: usize = default;
     let length: usize = options.len();
 
-    let mut cursor_position: (u16, u16) = crossterm::cursor::position().unwrap();
+    crossterm::terminal::enable_raw_mode().unwrap();
 
-    //println!("{:?}", crossterm::cursor::position().unwrap());
+    stdout.execute(crossterm::cursor::MoveToColumn(0)).unwrap();
 
-    stdout.execute(crossterm::cursor::Hide).unwrap();
-    //stdout.execute(crossterm::cursor::SavePosition).unwrap();
+    let cursor_position: (u16, u16) = crossterm::cursor::position().unwrap();
+
+    stdout
+        .execute(crossterm::cursor::Hide)
+        .unwrap()
+        .execute(crossterm::cursor::SavePosition)
+        .unwrap();
 
     loop
     {
@@ -41,15 +44,28 @@ fn show_menu(options: Vec<String>, default: usize)
         {
             if index == current
             {
-                stdout.execute(Print(" > Testing\n")).unwrap(); //.write(" > {}", String::from(option));
-                                                                //println!(" > {}", String::from(option).bold().green());
+                stdout
+                    .execute(crossterm::cursor::MoveToColumn(0))
+                    .unwrap()
+                    .execute(crossterm::style::Print(format!(" > {}", option)))
+                    .unwrap()
+                    .execute(crossterm::cursor::MoveToRow(
+                        cursor_position.1 + 1 + index as u16,
+                    ))
+                    .unwrap();
                 continue;
             }
 
-            stdout.execute(Print("   Testing 2\n")).unwrap();
+            stdout
+                .execute(crossterm::cursor::MoveToColumn(0))
+                .unwrap()
+                .execute(crossterm::style::Print(format!("   {}", option)))
+                .unwrap()
+                .execute(crossterm::cursor::MoveToRow(
+                    cursor_position.1 + 1 + index as u16,
+                ))
+                .unwrap();
         }
-
-        //println!("{:?}", crossterm::cursor::position().unwrap());
 
         if crossterm::event::poll(std::time::Duration::from_millis(100)).unwrap()
         {
@@ -59,7 +75,11 @@ fn show_menu(options: Vec<String>, default: usize)
                 {
                     if event.code == crossterm::event::KeyCode::Up
                     {
-                        current = (current - 1) % length;
+                        if current <= 0
+                        {
+                            current = length;
+                        }
+                        current = current - 1;
                     }
 
                     if event.code == crossterm::event::KeyCode::Down
@@ -77,16 +97,15 @@ fn show_menu(options: Vec<String>, default: usize)
             }
         }
 
-        //println!("{:?}", crossterm::cursor::position().unwrap());
-
-        stdout.flush().unwrap();
-
-        /*stdout
-        .flush()
-        .unwrap()
-        .execute(crossterm::terminal::Clear(
-            crossterm::terminal::ClearType::FromCursorDown,
-        ))
-        .unwrap();*/
+        stdout
+            .execute(crossterm::cursor::RestorePosition)
+            .unwrap()
+            .execute(crossterm::terminal::Clear(
+                crossterm::terminal::ClearType::FromCursorDown,
+            ))
+            .unwrap();
     }
+
+    stdout.execute(crossterm::cursor::Show).unwrap();
+    write!(stdout, "Testing").unwrap();
 }
