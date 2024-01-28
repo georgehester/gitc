@@ -1,68 +1,92 @@
-use std::{ops::Deref, path::PathBuf};
+use std::io::Write;
+
+use crossterm::{
+    event,
+    style::{Print, Stylize},
+    ExecutableCommand,
+};
 
 pub mod error;
+pub mod git;
 
 fn main()
 {
-    read_directory();
+    let git_configurations: Vec<git::configuration::File> = git::configuration::load().unwrap();
+
+    show_menu(
+        git_configurations
+            .iter()
+            .map(|file| String::from(file.name.trim()))
+            .collect::<Vec<String>>(),
+        0,
+    );
 }
 
-struct ConfigurationFile
+fn show_menu(options: Vec<String>, default: usize)
 {
-    path: PathBuf,
-    name: String,
-}
+    let mut stdout = std::io::stdout();
+    let mut current: usize = default;
+    let length: usize = options.len();
 
-fn read_directory()
-{
-    // Get the home directory of the process owner and add the gitc folder
-    let mut gitc_path = homedir::get_my_home().expect("").expect("");
-    gitc_path.push(".gitc");
+    let mut cursor_position: (u16, u16) = crossterm::cursor::position().unwrap();
 
-    // Check the gitc path exists
-    if !gitc_path.exists()
+    //println!("{:?}", crossterm::cursor::position().unwrap());
+
+    stdout.execute(crossterm::cursor::Hide).unwrap();
+    //stdout.execute(crossterm::cursor::SavePosition).unwrap();
+
+    loop
     {
-        std::fs::create_dir_all(&gitc_path).expect("Failed to create gitc directory");
-    }
-
-    // Check the gitc path is a directory
-    if !gitc_path.is_dir()
-    {
-        panic!("Failed as .gitc is not a directory");
-    }
-
-    // Read the gitc directory for files
-    let files = std::fs::read_dir(&gitc_path).expect("");
-
-    // Create the array to store the output
-    let mut output: Vec<ConfigurationFile> = Vec::new();
-
-    for file_result in files
-    {
-        let file = file_result.expect("");
-        let mut file_name = file.file_name().into_string().expect("");
-
-        if file_name.ends_with(".gitconfig")
+        for (index, option) in options.iter().enumerate()
         {
-            let configuration_name = &file_name.drain(..file_name.len() - 10).collect::<String>();
+            if index == current
+            {
+                stdout.execute(Print(" > Testing\n")).unwrap(); //.write(" > {}", String::from(option));
+                                                                //println!(" > {}", String::from(option).bold().green());
+                continue;
+            }
 
-            let mut file_path = std::path::PathBuf::from(&gitc_path);
-            file_path.push(configuration_name);
-            file_path.push(file_name);
-
-            println!("Name: {:?}", configuration_name);
-            println!("Path: {:?}", file_path);
+            stdout.execute(Print("   Testing 2\n")).unwrap();
         }
+
+        //println!("{:?}", crossterm::cursor::position().unwrap());
+
+        if crossterm::event::poll(std::time::Duration::from_millis(100)).unwrap()
+        {
+            match crossterm::event::read().unwrap()
+            {
+                crossterm::event::Event::Key(event) =>
+                {
+                    if event.code == crossterm::event::KeyCode::Up
+                    {
+                        current = (current - 1) % length;
+                    }
+
+                    if event.code == crossterm::event::KeyCode::Down
+                    {
+                        current = (current + 1) % length;
+                    }
+
+                    if event.code == crossterm::event::KeyCode::Enter
+                    {
+                        break;
+                    }
+                }
+                _ =>
+                {}
+            }
+        }
+
+        //println!("{:?}", crossterm::cursor::position().unwrap());
+
+        stdout.flush().unwrap();
+
+        /*stdout
+        .flush()
+        .unwrap()
+        .execute(crossterm::terminal::Clear(
+            crossterm::terminal::ClearType::FromCursorDown,
+        ))
+        .unwrap();*/
     }
-
-    /*
-    println!("Hello");
-
-    let files: std::fs::ReadDir =
-        std::fs::read_dir("~/.gitc").expect("Failed to read gitc directory");
-
-    for file in files
-    {
-        println!("{:?}", file);
-    }*/
 }
