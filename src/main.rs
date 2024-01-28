@@ -32,40 +32,73 @@ fn show_menu(options: Vec<String>, default: usize)
 
     //let cursor_position: (u16, u16) = crossterm::cursor::position().unwrap();
 
+    //println!("{:?}", crossterm::cursor::position().unwrap());
+
     stdout
-        .execute(crossterm::cursor::Hide)
+        .execute(crossterm::cursor::Show)
         .unwrap()
         .execute(crossterm::cursor::SavePosition)
         .unwrap();
 
     loop
     {
+        //stdout.execute(crossterm::cursor::SavePosition).unwrap();
+
         for (index, option) in options.iter().enumerate()
         {
             if index == current
             {
                 stdout
-                    .execute(crossterm::cursor::MoveToColumn(0))
+                    .execute(crossterm::cursor::MoveTo(
+                        0,
+                        crossterm::cursor::position().unwrap().1 + (index as u16),
+                    ))
                     .unwrap()
-                    .execute(crossterm::style::Print(format!(" > {}\n", option)))
+                    .execute(crossterm::style::Print(format!(
+                        " > {} {} {}",
+                        option,
+                        crossterm::cursor::position().unwrap().0,
+                        index
+                    )))
                     .unwrap();
                 //.execute(crossterm::cursor::MoveToRow(
-                //    cursor_position.1 + 1 + index as u16,
+                //    crossterm::cursor::position().unwrap().0 + 1,
                 //))
                 //.unwrap();
                 continue;
             }
 
             stdout
-                .execute(crossterm::cursor::MoveToColumn(0))
+                .execute(crossterm::cursor::MoveTo(
+                    0,
+                    crossterm::cursor::position().unwrap().1 + (index as u16),
+                ))
                 .unwrap()
-                .execute(crossterm::style::Print(format!("   {}\n", option)))
+                .execute(crossterm::style::Print(format!(
+                    "   {} {} {}",
+                    option,
+                    crossterm::cursor::position().unwrap().0,
+                    index
+                )))
                 .unwrap();
+            //.execute(crossterm::cursor::MoveToRow(
+            //    crossterm::cursor::position().unwrap().0 + 1,
+            //))
+            //.unwrap();
             //.execute(crossterm::cursor::MoveToRow(
             //    cursor_position.1 + 1 + index as u16,
             //))
             //.unwrap();
+
+            if index < length
+            {
+                stdout
+                    .execute(crossterm::cursor::MoveToNextLine(1))
+                    .unwrap();
+            }
         }
+
+        //println!("{:?}", crossterm::cursor::position().unwrap());
 
         if crossterm::event::poll(std::time::Duration::from_millis(100)).unwrap()
         {
