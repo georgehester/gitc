@@ -1,5 +1,3 @@
-use crossterm::ExecutableCommand;
-
 fn setup_terminal(stdout: &mut std::io::Stdout)
 {
     // Hide cursor and enable raw mode
@@ -63,10 +61,12 @@ pub fn draw_option_menu(options: Vec<String>, default: usize) -> usize
                 crossterm::execute!(
                     &mut stdout,
                     crossterm::cursor::MoveTo(0, crossterm::cursor::position().unwrap().1),
-                    crossterm::style::Print(" > "),
+                    crossterm::style::SetAttribute(crossterm::style::Attribute::Bold),
+                    crossterm::style::Print(" -> "),
                     crossterm::style::SetForegroundColor(crossterm::style::Color::Green),
                     crossterm::style::Print(format!("{}", option)),
                     crossterm::style::ResetColor,
+                    crossterm::style::SetAttribute(crossterm::style::Attribute::Reset),
                 )
                 .unwrap();
             }
@@ -75,7 +75,7 @@ pub fn draw_option_menu(options: Vec<String>, default: usize) -> usize
                 crossterm::execute!(
                     &mut stdout,
                     crossterm::cursor::MoveTo(0, crossterm::cursor::position().unwrap().1),
-                    crossterm::style::Print(format!("   {}", option)),
+                    crossterm::style::Print(format!("    {}", option)),
                 )
                 .unwrap();
             }
@@ -147,4 +147,47 @@ pub fn draw_option_menu(options: Vec<String>, default: usize) -> usize
 
     // Return selected option
     return current;
+}
+
+pub fn draw_list(list: Vec<String>, selected: usize)
+{
+    // Create stdout
+    let mut stdout = std::io::stdout();
+
+    // Setup terminal for output
+    setup_terminal(&mut stdout);
+
+    for (index, item) in list.iter().enumerate()
+    {
+        if index == selected
+        {
+            crossterm::execute!(
+                &mut stdout,
+                crossterm::cursor::MoveTo(0, crossterm::cursor::position().unwrap().1),
+                crossterm::style::SetAttribute(crossterm::style::Attribute::Bold),
+                crossterm::style::Print(" -> "),
+                crossterm::style::SetForegroundColor(crossterm::style::Color::Green),
+                crossterm::style::Print(format!("{}", item)),
+                crossterm::style::ResetColor,
+                crossterm::style::SetAttribute(crossterm::style::Attribute::Reset),
+            )
+            .unwrap();
+        }
+        else
+        {
+            crossterm::execute!(
+                &mut stdout,
+                crossterm::cursor::MoveTo(0, crossterm::cursor::position().unwrap().1),
+                crossterm::style::Print(format!("    {}", item)),
+            )
+            .unwrap();
+        }
+
+        if index < list.len() - 1
+        {
+            crossterm::execute!(&mut stdout, crossterm::style::Print("\n"),).unwrap();
+        }
+    }
+
+    cleanup_terminal(&mut stdout);
 }

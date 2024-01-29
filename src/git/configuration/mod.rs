@@ -15,6 +15,11 @@ impl std::fmt::Debug for File
     }
 }
 
+pub fn swap()
+{
+    todo!()
+}
+
 pub fn load() -> Result<Vec<File>, crate::error::Error>
 {
     // Get the home directory of the process owener
